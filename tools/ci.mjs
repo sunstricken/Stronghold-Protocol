@@ -62,6 +62,9 @@ export const TEST_FILES = ['test/**/*.test.js', 'test/e2e/coop.e2e.mjs', 'plugin
 export const SKIPPED_CI_STEPS = [
   { uses: 'actions/checkout', why: 'GitHub runner: the checkout is this folder' },
   { uses: 'actions/setup-node', why: 'GitHub runner: the Node.js of this machine is used' },
+  { job: 'test', uses: 'actions/setup-python', why: 'GitHub runner: prepare Python 3.12 for extractor fixtures; the separate job checks Python 3.8 syntax' },
+  { job: 'test', name: 'Install Python fixture dependency (Pillow)', run: 'python -m pip install --disable-pip-version-check "Pillow>=10"',
+    why: 'CI dependency installation only: local extractor tests use the prepared Python/Pillow environment; no test is omitted' },
   { name: 'Install (npm ci → postinstall copies public/vendor)', why: 'run `npm ci` yourself; it is not a check' },
   { job: 'golden', name: 'Full Golden regression check', run: 'npm run golden', why: 'run `npm run golden` separately for the full corpus' },
 ];

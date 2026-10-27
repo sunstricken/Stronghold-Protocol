@@ -1,5 +1,5 @@
 // GitHub #693: a submitted issue must carry the version the reporter is on. The shields.io badge
-// stays in the checklist as a hint of the latest release; it is not that field.
+// is not that field. This fork directs feedback to its own tracker without requiring an upstream release badge.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +13,7 @@ function versionBlock(src) {
 }
 
 for (const file of FILES) {
-  test(`${file}: required 版本号, badge kept as a hint`, () => {
+  test(`${file}: required 版本号 and feedback owned by the maintained fork`, () => {
     const src = readFileSync(new URL(`../.github/ISSUE_TEMPLATE/${file}`, import.meta.url), 'utf8');
     const field = versionBlock(src);
     assert.match(field, /^input\n/);
@@ -25,6 +25,7 @@ for (const file of FILES) {
     assert.match(field, /只作对照/);
     assert.match(field, /\n    validations:\n      required: true$/);
     assert.doesNotMatch(field, /shields\.io/);
-    assert.match(src, /img\.shields\.io\/github\/v\/release\/sganggs\/Stronghold-Protocol/);
+    assert.match(src, /github\.com\/sunstricken\/Stronghold-Protocol\/issues/);
+    assert.doesNotMatch(src, /github\.com\/sganggs\/Stronghold-Protocol\/issues|shields\.io\/github\/v\/release\/sganggs/);
   });
 }

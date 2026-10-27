@@ -15,6 +15,10 @@ Python 3.8 语法检查固定在 `ubuntu-22.04`：2026-10-27 的 run 40478410968
 - `tooling`：Ubuntu / Node 22 跑 lint、导入边界和类型检查；lint 警告不失败。
 - `golden`：独立 Ubuntu / Node 22，全量 `npm run golden`，有差异则失败，绝不更新期望。
 
+八个测试分片均显式准备 Python 3.12 与 `Pillow>=10`，用于本地提取器的纯夹具测试。
+2026-10-27 的 run 40478691004 在新 Ubuntu 镜像缺少 `PIL` 时暴露该依赖；不依赖 runner 预装包，也不跳过测试。
+本地 `tools/ci.mjs` 与 npm 安装步骤一样只跳过依赖安装动作，测试集合不变；本机按提取器环境准备 Pillow。
+
 本机 `npm run ci`（`node tools/ci.mjs`）依次复跑 setup、全量测试、冒烟、CI 守卫、lint、导入边界和类型检查。
 `--only`、`--keep-going`、`--list` 见 [CONTRIBUTING.md](../CONTRIBUTING.md)。本地测试步骤清除继承的 `SHARD` 和 `JUNIT`，保证全量且不意外写报告；全量黄金另跑 `npm run golden`。本地不复制 CI 的系统或 Node 版本矩阵。
 
