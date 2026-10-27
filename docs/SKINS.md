@@ -48,6 +48,18 @@ Three properties are load-bearing:
   model when the skin (or its model) is not in the manifest; `avatarUrl` / `portraitUrl` / `illustUrl` fall back to the
   operator's own pictures. The picker shows the operator's portrait on a skin that ships none.
 
+## Loadout JSON import and export (fork, 2026-10-27)
+
+干员调配 exports its existing v2 `stronghold.loadout` envelope (`byChar`, `ops`, `count`) with
+`cosmetics: { [charId]: skinId }`, including choices outside the current roster and choices whose art is unavailable.
+`count` continues to count skill/module entries only. Both list and card views allow export when only skins changed.
+Import accepts this field in v1 (`entries`, as in older shared presets) and v2 (`byChar`), and also accepts skin-only
+presets. Per the user's 2026-10-27 decision, listed operators overwrite their own choices; unlisted operators stay.
+An absent or empty map does nothing. `ui/skinModel.js` filters pairs using `isCharId` / `isSkinId` and the wire limit;
+`ui/skins.js applySkinImport` merges through `setSkins`, preserving the existing persistence and `room.skins` sync.
+At capacity, new operators are skipped without deleting current choices; existing operators can still be updated.
+No asset lookup is needed: a valid choice stays stored while its art is unavailable and uses the normal fallback.
+
 ## Picture-only outfits (0.3.2, B6)
 
 The maintainer's 2026-10-18 **option A** makes a `skins` record with pictures but no Spine wearable.

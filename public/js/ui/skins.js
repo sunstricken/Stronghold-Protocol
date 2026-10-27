@@ -24,6 +24,7 @@
 import { createStore, loadPref, savePref } from '../store.js';
 import { data } from '../data.js';
 import { SKIN_LIMITS } from '../../../shared/protocol.js';
+import { parseImportedSkins } from './skinModel.js';
 
 /** The localStorage preference (`sp.pref.<key>`) of this browser's skin choices: `{ [charId]: skinId }`. */
 export const SKINS_PREF = 'skins';
@@ -87,6 +88,24 @@ export function parseStoredSkins(raw) {
     kept++;
   }
   return out;
+}
+
+/** Merge only the imported operators. At the wire limit, existing choices still update; other choices stay intact. */
+export function applySkinImport(entries) {
+  const clean = parseImportedSkins(entries);
+  const next = { ...skinsStore.get()[SKINS_KEY] };
+  let size = Object.keys(next).length;
+  let applied = 0;
+  for (const [id, skin] of Object.entries(clean)) {
+    if (!Object.hasOwn(next, id)) {
+      if (size >= SKIN_LIMITS.entries) continue;
+      size++;
+    }
+    next[id] = skin;
+    applied++;
+  }
+  if (applied) setSkins(next);
+  return { applied, dropped: Object.keys(entries || {}).length - applied };
 }
 
 /**
