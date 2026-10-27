@@ -46,7 +46,7 @@ test('parseStored: tolerant of junk, keeps structurally valid entries; toStored 
 test('exportPayload / serializeExport: versioned envelope (v2: by operator), entries copied; parseImport round trip', () => {
   const entries = { char_101_sora: { skill: 0 }, char_350_surtr: { module: SWIRE_ALT } };
   const p = exportPayload(entries, { now: Date.UTC(2026, 9, 3, 4, 5, 6) });
-  assert.deepEqual(Object.keys(p).sort(), ['byChar', 'count', 'exportedAt', 'kind', 'ops', 'v'], 'exactly the envelope (0.2.2: + the 潜能 / 练度 ops; 0.3.2: byChar), no unused field');
+  assert.deepEqual(Object.keys(p).sort(), ['byChar', 'cosmetics', 'count', 'exportedAt', 'kind', 'ops', 'v'], 'the v2 envelope also carries skin choices');
   assert.deepEqual(p.ops, {}, 'no settings: an empty map (an import then resets the settings to the defaults)');
   assert.equal(p.kind, LOADOUT_EXPORT_KIND);
   assert.equal(p.v, LOADOUT_VERSION);

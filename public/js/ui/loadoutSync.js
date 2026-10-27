@@ -47,7 +47,7 @@ import { ruleOption } from '../../../shared/plugins/rules.js';
 import { OWNERSHIP_PREF, parseStoredOwnership, parseStoredOwnershipChars, toStoredOwnership, toStoredOwnershipV1, cleanIds, sanitizeNotOwned,
   notOwnedView, rebaseChars } from './ownershipModel.js';
 import { parseStoredDiy, toStoredDiy, cleanPicks, sanitizeDiyPicks, diyPrefKey } from './diyModel.js';
-import { skinsStore, SKINS_KEY, SKINS_SYNC_KEY, parseStoredSkins } from './skins.js';
+import { skinsStore, SKINS_KEY, SKINS_SYNC_KEY, parseStoredSkins, applySkinImport } from './skins.js';
 import { cardStore, CARD_KEY, CARD_SYNC_KEY, cardOperators } from './seatArt.js';
 import { needsContent, serverDefaultVersion } from '../versions.js';
 import { DEFAULT_VERSION } from '../../../shared/versions.js';
@@ -301,13 +301,14 @@ export function importedNotOwned(parsed) {
  * loadout over it would be a loss the player never asked for.
  * With `ops` (an import that carries the per-operator 潜能 / 练度, 0.2.2: `isOperator` from the loaded data) those are
  * sanitised and replace the current ones as well; without, the current ones stay.
+ * Optional cosmetics merge through the skin store; absent operators and unavailable art keep their saved choices.
  * @param {Record<string, any>} entries `parseImport(...).entries` (chess ids of the data on screen: importedEntries)
  * @param {(id: string) => any} lookup chess lookup
- * @param {{ ops?: Record<string, any>|null, isOperator?: (charId: string) => boolean }} [o]
- * @returns {{ applied: number, dropped: number, ops?: number }} entries kept / entries (and settings) not imported / settings
+ * @param {{ ops?: Record<string, any>|null, isOperator?: (charId: string) => boolean, cosmetics?: Record<string, string>|null }} [o]
+ * @returns {{ applied: number, dropped: number, ops?: number, skins?: number }} entries kept / entries (and settings) not imported / settings
  *   kept (only with `ops`)
  */
-export function applyLoadoutEntries(entries, lookup, { ops = null, isOperator = null } = {}) {
+export function applyLoadoutEntries(entries, lookup, { ops = null, isOperator = null, cosmetics = null } = {}) {
   const asked = Object.keys(entries || {}).length;
   const clean = sanitizeEntries(entries, lookup);
   const applied = Object.keys(clean).length;
@@ -318,8 +319,9 @@ export function applyLoadoutEntries(entries, lookup, { ops = null, isOperator = 
     if (cleanOps) loadoutStore.set({ ops: cleanOps });
     setEntries(applied ? clean : loadoutStore.get().entries, { lookup });
   }
-  const dropped = Math.max(0, asked - applied) + Math.max(0, askedOps - nOps);
-  return cleanOps ? { applied, dropped, ops: nOps } : { applied, dropped };
+  const skins = cosmetics ? applySkinImport(cosmetics) : null;
+  const dropped = Math.max(0, asked - applied) + Math.max(0, askedOps - nOps) + (skins?.dropped ?? 0);
+  return { applied, dropped, ...(cleanOps ? { ops: nOps } : {}), ...(skins ? { skins: skins.applied } : {}) };
 }
 
 /**

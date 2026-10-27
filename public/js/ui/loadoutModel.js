@@ -25,6 +25,7 @@
 import { loadoutOptions, checkLoadout, checkLoadoutOps, resolveLoadout, MODULE_NONE, LOADOUT_LIMITS } from '../../../shared/protocol.js';
 import { isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT } from '../../../shared/potential.js';
 import { t, N_ } from '../../../shared/i18n.js';
+import { parseImportedSkins } from './skinModel.js';
 
 export { MODULE_NONE };
 
@@ -261,11 +262,11 @@ export const LOADOUT_IMPORT_MAX_BYTES = 256 * 1024;
 
 /**
  * Portable payload of a loadout, as downloaded / copied by 导出 — v2 (DESIGN §35.23): the choices by operator
- * (`byChar`, every version's), with the per-operator 潜能 / 练度 (`ops`, 0.2.2).
+ * (`byChar`, every version's), with 潜能 / 练度 (`ops`, 0.2.2) and skin choices (`cosmetics`).
  * @param {Record<string, any>} byChar the stored choices by charId
- * @param {{ now?: number, ops?: Record<string, any> }} [o]
+ * @param {{ now?: number, ops?: Record<string, any>, cosmetics?: Record<string, string> }} [o]
  */
-export function exportPayload(byChar, { now = Date.now(), ops = {} } = {}) {
+export function exportPayload(byChar, { now = Date.now(), ops = {}, cosmetics = {} } = {}) {
   const clean = {};
   for (const [id, e] of Object.entries(byChar || {})) if (isObj(e)) clean[id] = { ...e };
   const cleanOps = {};
@@ -277,6 +278,7 @@ export function exportPayload(byChar, { now = Date.now(), ops = {} } = {}) {
     count: Object.keys(clean).length,
     byChar: clean,
     ops: cleanOps,
+    cosmetics: parseImportedSkins(cosmetics),
   };
 }
 
@@ -294,8 +296,9 @@ export function serializeExport(byChar, opts) {
  * none: an older export leaves the current settings alone); a payload of settings only imports.
  * A v2 payload (DESIGN §35.23) gives `byChar` (choices by operator) instead of `entries`; a v1 one gives `entries` by
  * 第二期下半's chess ids (the caller maps them: ui/loadoutSync.js).
+ * Optional `cosmetics` in either version carries skin choices by charId. Missing or empty choices leave skins alone.
  * @param {any} input payload object or serialised text
- * @returns {{ ok: true, entries?: Record<string, any>, byChar?: Record<string, any>, ops?: Record<string, any> } | { ok: false, error: string }}
+ * @returns {{ ok: true, entries?: Record<string, any>, byChar?: Record<string, any>, ops?: Record<string, any>, cosmetics?: Record<string, string> } | { ok: false, error: string }}
  */
 export function parseImport(input) {
   let raw = input;
@@ -312,14 +315,17 @@ export function parseImport(input) {
   const kind = typeof raw.kind === 'string' ? raw.kind : null;
   if (kind && kind !== LOADOUT_EXPORT_KIND) return { ok: false, error: t('这不是干员调配的数据') };
   const ops = isObj(raw.ops) ? parseStoredOps(raw) : null;
+  const cosmetics = isObj(raw.cosmetics) ? parseImportedSkins(raw.cosmetics) : null;
+  const settings = { ...(ops ? { ops } : {}), ...(cosmetics ? { cosmetics } : {}) };
+  const hasSettings = (ops && Object.keys(ops).length) || (cosmetics && Object.keys(cosmetics).length);
   if (v === 2) {
     const byChar = parseStoredByChar(raw);
-    if (!Object.keys(byChar).length && !(ops && Object.keys(ops).length)) return { ok: false, error: t('里面没有有效的调配条目') };
-    return ops ? { ok: true, byChar, ops } : { ok: true, byChar };
+    if (!Object.keys(byChar).length && !hasSettings) return { ok: false, error: t('里面没有有效的调配条目') };
+    return { ok: true, byChar, ...settings };
   }
   const entries = parseStored(raw);
-  if (!Object.keys(entries).length && !(ops && Object.keys(ops).length)) return { ok: false, error: t('里面没有有效的调配条目') };
-  return ops ? { ok: true, entries, ops } : { ok: true, entries };
+  if (!Object.keys(entries).length && !hasSettings) return { ok: false, error: t('里面没有有效的调配条目') };
+  return { ok: true, entries, ...settings };
 }
 
 // ---- options & choices ---------------------------------------------------------------------------------------------

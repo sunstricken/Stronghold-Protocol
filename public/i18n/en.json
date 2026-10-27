@@ -2408,5 +2408,6 @@
   "访问此服务器（新标签页）": "Visit server (new tab)",
   "正在加载服务器列表": "Loading server list",
   "服务器列表暂时无法加载，请稍后重试。": "The server list could not be loaded. Please try again later.",
-  "暂未收录其他服务器。": "No other servers have been listed yet."
+  "暂未收录其他服务器。": "No other servers have been listed yet.",
+  "已导入 {n} 名干员的皮肤": "Imported outfits for {n} operators"
 }
