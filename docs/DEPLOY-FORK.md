@@ -5,7 +5,7 @@
 
 ## 发布行为
 
-- `master` 的 **push CI 完整成功**后，`.github/workflows/deploy.yml` 构建代码镜像并上传 GHCR。
+- `master` 的 **push CI 完整成功**，且同一提交的独立 Python 兼容检查成功后，`.github/workflows/deploy.yml` 构建代码镜像并上传 GHCR。
   不从 PR 的测试结果发布，不从上游自动合并代码，不下载或发布游戏美术。
 - 镜像使用 `sha-<完整提交SHA>` 标签，部署使用不可变 digest；镜像 revision 与 `/healthz.release` 用于核验。
 - Repository Variable `DEPLOY_ENABLED=true` 才连接生产服务器；未配置时只发布镜像。

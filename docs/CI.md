@@ -2,7 +2,10 @@
 
 定制服的 `.github/workflows/deploy.yml` 在 `master` 的 push CI 成功后发布精确提交的 GHCR 代码镜像。
 PR CI 不授予发布资格；按 digest 部署，生产连接由仓库变量 `DEPLOY_ENABLED` 启用。
-手动 deploy 也要求相同 SHA 通过 push CI，rollback 使用服务器保留的上一镜像。
+手动 deploy 也要求相同 SHA 通过 push CI 和独立 Python 兼容检查，rollback 使用服务器保留的上一镜像。
+Python 3.8 语法检查固定在 `ubuntu-22.04`：2026-10-27 的 run 40478410968 已确认
+`ubuntu-latest`（26.04）没有可安装的 Python 3.8；固定环境保留最低版本覆盖，参考
+[官方解释器清单](https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json)。
 配置与首次迁移见 [DEPLOY-FORK.md](DEPLOY-FORK.md)。原有 CI / Golden 门槛保持不变。
 
 分片只分配测试文件，不减少全量测试集合。#835 和 #836 一起落地；`.github/workflows/ci.yml` 的配置为：

@@ -45,10 +45,12 @@ jobs:
             const sha = context.eventName === 'workflow_run' ? context.payload.workflow_run.head_sha : context.sha;
             if (branch.data.commit.sha !== sha) throw new Error('This run no longer describes master; use the latest CI run.');
             if (context.payload.inputs?.operation !== 'rollback') {
-              const runs = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id: 'ci.yml',
-                head_sha: sha, event: 'push', status: 'completed', per_page: 100 });
-              if (!runs.data.workflow_runs.some(run => run.conclusion === 'success' && run.head_repository.full_name === `${owner}/${repo}`)) {
-                throw new Error('The exact master commit must pass CI before publishing or deploying.');
+              for (const workflowId of ['ci.yml', 'local-extract-python.yml']) {
+                const runs = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id: workflowId,
+                  head_sha: sha, event: 'push', status: 'completed', per_page: 100 });
+                if (!runs.data.workflow_runs.some(run => run.conclusion === 'success' && run.head_repository.full_name === `${owner}/${repo}`)) {
+                  throw new Error(`The exact master commit must pass ${workflowId} before publishing or deploying.`);
+                }
               }
             }
             core.setOutput('sha', sha);
