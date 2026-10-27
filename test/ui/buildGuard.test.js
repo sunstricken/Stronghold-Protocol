@@ -3,7 +3,7 @@
 // client-only battle fix stayed invisible on the reporting player's page).
 //
 // Review-driven contract: a check that cannot read a build NEVER reloads, a new build is acted on only after two checks
-// in a row agree, and a match on screen is never thrown away — the guard waits for it (and its settlement) to end.
+// in a row agree, and no page is reloaded automatically, including after settlement.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkBuildOnce, startBuildGuard, fetchBuild, BUILD_CHECK_MS, BUILD_FETCH_TIMEOUT_MS } from '../../public/js/ui/buildGuard.js';
@@ -61,7 +61,7 @@ function manual({ inMatch = false } = {}) {
   };
 }
 
-test('startBuildGuard: records this page\'s build in memory, reloads once on a NEW build (after two agreeing checks)', async () => {
+test('startBuildGuard: notifies once after two agreeing checks and never reloads the page', async () => {
   const m = manual();
   await new Promise((r) => setTimeout(r, 0));                  // the immediate first check
   assert.equal(m.guard.known(), 'aaa');
@@ -73,10 +73,11 @@ test('startBuildGuard: records this page\'s build in memory, reloads once on a N
   assert.equal(m.calls.reload, 0, 'one sighting is not enough: a half-copied deploy must not ping-pong the page');
   assert.equal(m.guard.stale(), false);
   await m.tick();
-  assert.equal(m.calls.reload, 1, 'the same new build twice → the page reloads');
+  assert.equal(m.calls.reload, 0, 'a confirmed update only notifies');
   assert.deepEqual(m.calls.stale, [{ build: 'bbb', known: 'aaa', waiting: false }]);
   await m.tick();
-  assert.equal(m.calls.reload, 1, 'the guard stopped after reloading');
+  assert.equal(m.calls.reload, 0);
+  assert.equal(m.calls.stale.length, 1, 'dismissal is not undone by another check');
   assert.equal(m.guard.stale(), true);
 });
 
@@ -106,10 +107,11 @@ test('startBuildGuard: an unreadable /healthz never reloads — not even after a
   await m.tick();
   assert.equal(m.calls.reload, 0, 'the sightings must be consecutive: the failures in between reset the count');
   await m.tick();
-  assert.equal(m.calls.reload, 1, 'two checks in a row agree → reload');
+  assert.equal(m.calls.reload, 0);
+  assert.equal(m.calls.stale.length, 1, 'two checks in a row agree → notify');
 });
 
-test('startBuildGuard: a match on screen is never thrown away — it waits for the match (and its settlement) to end', async () => {
+test('startBuildGuard: a match, settlement, and return to the lobby never trigger a reload', async () => {
   const m = manual({ inMatch: true });
   await new Promise((r) => setTimeout(r, 0));
   m.setBuild('bbb');
@@ -122,7 +124,33 @@ test('startBuildGuard: a match on screen is never thrown away — it waits for t
   assert.equal(m.calls.reload, 0);
   m.setInMatch(false);                                         // back in the lobby / room: the match is over
   await m.tick();
-  assert.equal(m.calls.reload, 1, 'once nothing is at stake the page reloads');
+  assert.equal(m.calls.reload, 0, 'the player still chooses when to update after leaving the match');
+  assert.equal(m.calls.stale.length, 1);
+});
+
+test('startBuildGuard: a later deployment notifies again, rollback clears the notice, baseline stays fixed', async () => {
+  let build = 'bbb';
+  const notices = [];
+  let current = 0;
+  const g = startBuildGuard({
+    known: 'aaa',
+    fetchFn: async () => ({ ok: true, json: async () => ({ build }) }),
+    setInterval: () => 1, clearInterval() {},
+    onStale: (info) => notices.push(info.build),
+    onCurrent: () => current++,
+  });
+  await new Promise((r) => setTimeout(r, 0));
+  await g.check();
+  assert.deepEqual(notices, ['bbb'], 'an injected page baseline catches a deployment before the first poll');
+  build = 'ccc';
+  await g.check(); await g.check(); await g.check();
+  assert.deepEqual(notices, ['bbb', 'ccc']);
+  build = 'aaa';
+  await g.check();
+  assert.equal(g.stale(), false);
+  assert.equal(current, 1);
+  assert.equal(g.known(), 'aaa');
+  g.stop();
 });
 
 test('startBuildGuard: stop() ends the watch', async () => {

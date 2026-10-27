@@ -2,6 +2,17 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+### Fork deployment admission lease
+
+The 2026-10-26 owner decision adds a deployment gate outside the deterministic simulation.
+`SP_DEPLOY_TOKEN` enables it only when it is 64 lowercase hex characters. Authenticated POST requests to
+`/_deploy/drain` and `/_deploy/resume` require the socket's loopback address; forwarding headers cannot grant access.
+A renewable drain lease lasts 120 seconds. Every `Lobby.startMatch` path refuses `MAINTENANCE` while leased;
+running matches, game intents, room membership and reconnects continue. Expiry restores new match admission.
+`/healthz` adds `release` (the deployed Git SHA, or null) and `deployment: { supported, draining, expiresAt }`.
+The single-instance deployer renews the lease while waiting for `matches === 0`, then replaces the container.
+It refuses to stop a server whose gate cannot be verified. This does not persist matches or migrate rooms.
+
 ## 8. Network protocol (shared/protocol.js is normative)
 
 Transport: one WebSocket per tab at `/ws`, JSON text frames `{ t: '<type>', ...payload }`. Client requests may carry `rid` (request id); the server's direct reply echoes `rid` (`ok` or `error`). Server pushes have no `rid`. Max frame 64 KB inbound (a compressed frame counts its inflated size); rate limit 40 msgs/s per connection (excess dropped with `error RATE`). Frames from 1 KB up are compressed with permessage-deflate (RFC 7692; `server/http/websocket.js WS_DEFLATE`: server context takeover — the deflate window is kept from one frame to the next —, an 8 KB server window (windowBits 13), zlib memLevel 7, about 105 KB of zlib state per connection); smaller frames go out plain — decided at the send site on the frame's UTF-8 length, because ws applies its own `threshold` only when the extension negotiated `*_no_context_takeover` — and a client that offers no compression, or caps the server window below 8 KB, gets plain frames. A measured 4-player match (one client's stream, a real ws round trip: 3,339 KiB of frames in 1,127 messages, the median of three runs): 284 KiB on the wire, against 809 KiB with per-message deflate and a 2 KB window (windowBits 15 would reach about 160 KiB at about 140 KiB more state per connection).

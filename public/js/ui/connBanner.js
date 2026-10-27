@@ -1,6 +1,6 @@
 // Connection banner (global chrome, mounted once by main.js): reconnecting / closed / rejected-hello states with
 // the matching action, "正在同步同盟状态…" while a resumed session waits for its room/match state, and "服务器已更新"
-// while a match still runs on a page the server has moved past (ui/buildGuard.js sets ui.buildStale). Outside a
+// while a page runs an older build (ui/buildGuard.js sets ui.buildStale). Outside a
 // match the banner sits at the bottom centre; in a match (html.sp-in-match, set by the match screen) it moves under the
 // top bar so it never covers the combat view switcher or the shop bar. While it shows, html.sp-conn moves the toasts
 // below it (classes instead of CSS :has(), which Firefox ESR / Safari < 15.4 lack).
@@ -10,6 +10,7 @@ import { net, CLIENT_ERR_TEXT } from '../net.js';
 import { useStore, shallowEqual } from '../store.js';
 import { useDocClass } from './device.js';
 import { t } from '../../../shared/i18n.js';
+import { showBuildUpdate } from './buildUpdate.js';
 
 /** Whether the banner shows for this connection state (mirrors the early returns below). */
 export function bannerVisible(conn, entered, restoring, buildStale = false) {
@@ -32,12 +33,11 @@ export function ConnectionBanner() {
     return html`<div class="conn-banner" role="status"><${Icon} name="refresh" /><span>${t('正在同步同盟状态…')}</span></div>`;
   }
   if (conn.status === 'online' && buildStale) {
-    // the server has a newer build than this page: the guard reloads by itself once the match is over, the button is
-    // for a player who would rather do it now
+    // Reopen the notice without refreshing or interrupting a running match.
     return html`<div class="conn-banner" role="alert">
       <${Icon} name="refresh" />
-      <span>${t('服务器已更新，本局结束后刷新')}</span>
-      <${Button} size="sm" variant="secondary" icon="refresh" onClick=${() => location.reload()}>${t('刷新页面')}<//>
+      <span>${t('新版本可用')}</span>
+      <${Button} size="sm" variant="secondary" icon="refresh" onClick=${showBuildUpdate}>${t('查看更新')}<//>
     </div>`;
   }
   if (!conn.everOnline && (conn.status === 'connecting' || conn.status === 'handshaking' || conn.status === 'idle')) return null;

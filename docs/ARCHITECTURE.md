@@ -13,6 +13,13 @@ making one, in Chinese). The [settlement usage guide](../server/sim/AGENTS.md) g
 
 ## 1. What runs where
 
+Fork deployment: [DEPLOY-FORK.md](DEPLOY-FORK.md) documents `.github/workflows/deploy.yml` and
+`scripts/deploy/`. The container-local gate is `server/http/deployment.js`, wired by `server/index.js`
+to `Lobby.startMatch`; the client notice is `public/js/ui/buildUpdate.js`, driven by `public/js/ui/buildGuard.js`.
+Fork identity is in `shared/project.js`; public contacts and manually curated server links are in
+`public/site-config.json`, loaded by `public/js/siteConfig.js`. `public/js/ui/serverDirectory.js` is mounted only
+by the title screen; rooms and matches never offer navigation. Configuration: [DEPLOY-FORK.md](DEPLOY-FORK.md).
+
 AI strategy selection is documented in [BOT_STRATEGIES](BOT_STRATEGIES.md): `botStrategyContract.js` defines
 the five hooks, `botStrategies.js` registers legacy/external/ioleta/adaptive/ioleta-adaptive, and `botIoletaPolicy.js` holds opt-in procurement heuristics.
 

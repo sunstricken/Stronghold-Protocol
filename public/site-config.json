@@ -1,0 +1,11 @@
+{
+  "currentServerName": "sunstricken",
+  "showOnFirstVisit": true,
+  "contacts": [
+    { "label": "strickensun@qq.com", "url": "mailto:strickensun@qq.com" }
+  ],
+  "servers": [
+    { "name": "wei.linxia.dev", "url": "https://wei.linxia.dev/", "enabled": true },
+    { "name": "game.xiaolubao.com", "url": "https://game.xiaolubao.com/", "enabled": true }
+  ]
+}

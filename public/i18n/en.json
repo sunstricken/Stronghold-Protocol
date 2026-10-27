@@ -1,4 +1,12 @@
 {
+  "发现新版本": "Update available",
+  "稍后更新": "Update later",
+  "立即更新": "Update now",
+  "新版本已发布，关闭提示后可继续使用，页面不会自动刷新。": "A new version is available. Dismiss this notice to continue; the page will not refresh automatically.",
+  "对局进行中，请在本局结束后更新。": "A match is in progress. Update after this match ends.",
+  "新版本可用": "New version available",
+  "查看更新": "View update",
+  "服务器正在准备更新，请稍后开始新对局": "The server is preparing an update. Please start a new match later.",
   "离线导入（不下载官方数据表）": "Import offline (do not download official data tables)",
   "_meta": {
     "type": "lang",
@@ -2387,5 +2395,18 @@
   "第 {round} 回合接替 AI；含此前席位数据，不计入个人统计或奖励。": "Took over AI in round {round}; includes earlier seat data and does not count toward personal statistics or rewards.",
   "申请在退出、断线、投票资格或阶段变化时取消。接替后的席位数据含 AI 此前表现，不计入你的个人统计或奖励。": "Requests are cancelled on leaving, disconnection, voter eligibility changes or phase changes. Inherited seat data includes earlier AI performance and does not count toward your personal statistics or rewards.",
   "允许观战者接替 AI": "Allow spectators to take over AI seats",
-  "默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。": "Off by default. When enabled, spectators can take over AI seats during preparation with a room vote; inherited records do not count toward personal stats or rewards."
+  "默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。": "Off by default. When enabled, spectators can take over AI seats during preparation with a room vote; inherited records do not count toward personal stats or rewards.",
+  "{name} 维护的衍生版本": "Fork maintained by {name}",
+  "原项目来源": "Original project",
+  "联系维护者": "Contact maintainer",
+  "服务器列表": "Server list",
+  "继续使用当前服务器": "Continue on this server",
+  "各服务器独立运营，房间和对局不互通，请与队友选择同一服务器。": "Servers operate independently; rooms and matches are separate. Choose the same server as your teammates.",
+  "本页面仅自发整理公开访问地址，未与其他维护者建立合作关系；访问情况及版本以对方网站为准。": "This is an independently curated list of public links, with no partnership with other maintainers. Availability and versions are determined by each site.",
+  "当前服务器": "Current server",
+  "维护者：{name}": "Maintainer: {name}",
+  "访问此服务器（新标签页）": "Visit server (new tab)",
+  "正在加载服务器列表": "Loading server list",
+  "服务器列表暂时无法加载，请稍后重试。": "The server list could not be loaded. Please try again later.",
+  "暂未收录其他服务器。": "No other servers have been listed yet."
 }

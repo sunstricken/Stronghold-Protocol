@@ -9,9 +9,8 @@
 // The first successful check of a page records that tag as "the build this page runs" — IN MEMORY, because one page is
 // one set of loaded modules: nothing must survive a reload, and a duplicated tab must not inherit the first tab's tag.
 // A later check reporting a DIFFERENT tag means the server changed under this page:
-//   * outside a match the page reloads itself, once;
-//   * during a match the guard never throws the player's game away — `onStale` fires (the connection banner offers
-//     刷新页面) and the reload happens by itself as soon as the match, settlement screen included, is over.
+//   * `onStale` fires once per confirmed build, in and outside a match;
+//   * the player chooses when to update. The guard never reloads or disconnects the page.
 // A check that cannot read a build (`/healthz` down or restarting, no `build` field, no answer in time) is 'unknown' and
 // NEVER reloads: a restarting server must not turn a playing page into the browser's error page. A new tag is acted on
 // only after two checks in a row report the SAME one, so a deploy that is still copying files cannot ping-pong a page.
@@ -19,7 +18,7 @@
 // The same `/healthz` body carries what else a page reads of the server before it says hello: `onHealth(body)` is told
 // every body a check reads (main.js: how many plugins the server has, for the title screen — DESIGN §32 P1a).
 //
-// Kept dependency-free and injectable (fetch / reload / inMatch / timers) so test/ui/buildGuard.test.js can drive it.
+// Kept dependency-free and injectable (fetch / inMatch / timers) so test/ui/buildGuard.test.js can drive it.
 
 /** How often a page re-asks the server for its build tag. */
 export const BUILD_CHECK_MS = 60_000;
@@ -73,29 +72,28 @@ export async function checkBuildOnce(o = {}) {
 
 /**
  * Watch for a new build.
- * @param {{ fetchFn?: Function, reload?: Function, inMatch?: () => boolean, intervalMs?: number, timeoutMs?: number,
+ * @param {{ fetchFn?: Function, known?: string|null, inMatch?: () => boolean, intervalMs?: number, timeoutMs?: number,
  *           setInterval?: Function, clearInterval?: Function, setTimeout?: Function, clearTimeout?: Function,
  *           onStale?: (info: { build: string, known: string|null, waiting: boolean }) => void,
- *           onHealth?: (body: any) => void }} [o]  onHealth: every /healthz body a check reads (see the header)
+ *           onCurrent?: () => void, onHealth?: (body: any) => void }} [o]
  * @returns {{ stop: () => void, check: () => Promise<object>, stale: () => boolean, known: () => string|null }}
  */
 export function startBuildGuard(o = {}) {
   const fetchFn = o.fetchFn || ((url, init) => globalThis.fetch(url, init));
-  const reload = o.reload || (() => globalThis.location.reload());
   const inMatch = typeof o.inMatch === 'function' ? o.inMatch : () => false;
   const setIv = o.setInterval || ((fn, ms) => globalThis.setInterval(fn, ms));
   const clearIv = o.clearInterval || ((h) => globalThis.clearInterval(h));
   const intervalMs = Number.isFinite(o.intervalMs) && o.intervalMs > 0 ? o.intervalMs : BUILD_CHECK_MS;
-  let known = null;      // the build this page runs — memory only (one page == one set of loaded modules)
+  let known = typeof o.known === 'string' && o.known ? o.known : null;
   let candidate = null;  // the last new build seen; needs BUILD_CONFIRMATIONS checks in a row to be acted on
   let seen = 0;          // consecutive checks that reported `candidate`
-  let stale = false;     // a new build is confirmed → reload as soon as no match is on screen
+  let stale = false;
+  let notified = null;
   let pending = false;
   let timer = null;
   let stopped = false;
 
   const stopTimer = () => { if (timer != null) { clearIv(timer); timer = null; } };
-  const reloadNow = () => { stopped = true; stopTimer(); reload(); };
 
   const check = async () => {
     if (stopped) return { status: 'stopped', build: null };
@@ -107,16 +105,24 @@ export function startBuildGuard(o = {}) {
     if (stopped) return { status: 'stopped', build: null };
     if (r.status === 'unknown') { candidate = null; seen = 0; return r; }   // review: a failed check never reloads
     if (r.status === 'first') { known = r.build; return r; }
-    if (r.status === 'current') { candidate = null; seen = 0; return r; }
+    if (r.status === 'current') {
+      candidate = null; seen = 0;
+      if (stale) {
+        stale = false; notified = null;
+        try { o.onCurrent?.(); } catch { /* ignore */ }
+      }
+      return r;
+    }
     // a different build: only BUILD_CONFIRMATIONS checks in a row with the SAME tag count (a deploy that is still
     // copying files exposes a tag that keeps moving, and must not ping-pong the page)
     if (candidate !== r.build) { candidate = r.build; seen = 1; } else { seen++; }
     if (seen < BUILD_CONFIRMATIONS) return { status: 'new', build: r.build };
-    const first = !stale;
     stale = true;
     const waiting = inMatch();
-    if (first) { try { o.onStale?.({ build: r.build, known, waiting }); } catch { /* ignore */ } }
-    if (!waiting) reloadNow();
+    if (notified !== r.build) {
+      notified = r.build;
+      try { o.onStale?.({ build: r.build, known, waiting }); } catch { /* ignore */ }
+    }
     return { status: 'stale', build: r.build, known };
   };
 

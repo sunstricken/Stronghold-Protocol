@@ -1,5 +1,7 @@
 # 部署指南
 
+定制服的 Debian / Docker 自动发布、对局等待保护、回滚与更新提示见 [DEPLOY-FORK.md](DEPLOY-FORK.md)。
+
 目标：在一台家用 Windows 小主机上长期开服，让朋友通过局域网或公网来玩。macOS / Linux / Docker 放在后面。
 所有命令都在项目根目录执行。遇到问题先运行 `node tools/doctor.mjs`（只读诊断）。
 

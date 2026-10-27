@@ -49,7 +49,10 @@ RUN node --input-type=module -e "import { omitLlmFromRelease } from './server/ma
 
 # ---- 3. runtime ---------------------------------------------------------------------------------------
 FROM ${NODE_IMAGE}
+ARG RELEASE_SHA=""
+LABEL org.opencontainers.image.revision=${RELEASE_SHA}
 ENV NODE_ENV=production \
+    SP_RELEASE_SHA=${RELEASE_SHA} \
     PORT=3000 \
     HOST=0.0.0.0 \
     SP_PLUGIN_RESOURCES=/app/plugin-resources

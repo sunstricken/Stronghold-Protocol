@@ -40,6 +40,9 @@ import { SettingsModal } from '../ui/settings.js';
 import { installedCount } from '../content.js';
 import { NoticesButton } from '../ui/notices.js';
 import { sanitizeName, isValidName } from '../ui/playerName.js';
+import { PROJECT_REPO, ISSUES_URL, UPSTREAM_REPO, MAINTAINER } from '../../../shared/project.js';
+import { MaintainerLinks } from '../ui/maintainerLinks.js';
+import { ServerDirectory } from '../ui/serverDirectory.js';
 
 export { stripLoneSurrogates, sanitizeName, isValidName } from '../ui/playerName.js';
 
@@ -280,11 +283,16 @@ export function TitleScreen() {
       <${ResumeMatchButton} />
       <${PwaInstallButton} />
       <${NoticesButton} />
+      <${ServerDirectory} />
       ${installed ? html`<button type="button" class="title-plugins" data-testid="title-plugins" onClick=${openPlugins}>
         <${Icon} name="info" />${t('本服务器安装了 {n} 个插件', { n: installed })}</button>` : null}
       <span>${t('非官方同人复刻 · 游戏素材版权归 上海鹰角网络 / Yostar 所有')}</span>
       <span class="title-foot__meta">
-        <a class="title-repo" href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener noreferrer">${t('项目仓库')}</a>
+        <span>${t('{name} 维护的衍生版本', { name: MAINTAINER })}</span>
+        <a class="title-repo" href=${PROJECT_REPO} target="_blank" rel="noopener noreferrer">${t('项目仓库')}</a>
+        <a class="title-repo" href=${ISSUES_URL} target="_blank" rel="noopener noreferrer">${t('问题反馈')}</a>
+        <${MaintainerLinks} />
+        <a class="title-repo" href=${UPSTREAM_REPO} target="_blank" rel="noopener noreferrer">${t('原项目来源')}</a>
         <${MicroLabel}>v${APP_VERSION} · WEB SIMULATION<//>
         ${DEV_BUILD ? html`<span class="title-dev" role="note">${t('开发版 · 不稳定，请勿用于公开服务器')}</span>` : null}
       </span>

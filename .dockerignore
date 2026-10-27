@@ -32,3 +32,4 @@ scripts/service.env.cmd
 Thumbs.db
 .env
 .env.*
+server.env

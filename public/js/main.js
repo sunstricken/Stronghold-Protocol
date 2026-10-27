@@ -67,6 +67,7 @@ import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installSettingsViews, loadoutStore } from './ui/loadoutSync.js';
 import { startBuildGuard } from './ui/buildGuard.js';
+import { BuildUpdateNotice } from './ui/buildUpdate.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
 import { t, N_, translateWire } from '../../shared/i18n.js';
 import { recordError, installTrafficMeter } from './diag.js';
@@ -367,6 +368,7 @@ function App() {
     ${error ? html`<${ScreenCrashed} error=${error} reset=${resetError} />` : html`<${Screen} key=${route} />`}
     <${TrustedNotice} />
     <${ConnectionBanner} />
+    <${BuildUpdateNotice} />
     <${ToastHost} />
     <${UiHosts} />
     <${GuideHost} />
@@ -491,13 +493,12 @@ async function boot() {
   }
   globalThis.__SP__ = { store, net, data, version: 1 };
   // A page keeps the modules it imported at load time for its whole lifetime, so a deploy cannot reach an open tab
-  // (ui/buildGuard.js): watch `/healthz.build`. Outside a match the page reloads itself; during a match the guard says
-  // so instead (the connection banner offers 刷新页面) and reloads once the match — settlement screen included — is over,
-  // so a running game is never thrown away.
+  // (ui/buildGuard.js): watch `/healthz.build` and offer a dismissible notice. Updating is always the player's choice.
   try {
     startBuildGuard({
       inMatch: () => selectRoute(store.get()) === 'game',
-      onStale: ({ waiting }) => { if (waiting) store.patch('ui', { buildStale: true }); },
+      onStale: () => store.patch('ui', { buildStale: true, buildNoticeOpen: true }),
+      onCurrent: () => store.patch('ui', { buildStale: false, buildNoticeOpen: false }),
       // the same /healthz names how many plugins the server has: the title screen shows it before any hello
       onHealth: (h) => {
         const n = pluginCount(h.content), notices = h.content?.notices === true;

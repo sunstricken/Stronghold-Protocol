@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        感谢您进行 Bug 反馈。请在上面的文本框⬆️起一个能够清晰描述您的问题的标题，便于开发者解决您的问题。
+        此处反馈由 sunstricken 维护的衍生版本。请不要将本服或本版本的问题直接提交到原项目。
+        也可联系 strickensun@qq.com。请在上面的文本框填写清晰的问题标题。
         
         > [!important]
         > 重要：如果要提出**多个 Bug**，请为每一个 Bug 开一个单独的 issue。
@@ -18,17 +19,24 @@ body:
       label: 检查清单
       description: 在开始反馈这个问题之前，请先检查：
       options:
-        - label: 我已更新到最新版 ![最新的版本号](https://img.shields.io/github/v/release/sganggs/Stronghold-Protocol?include_prereleases&style=flat-square&label=) 或 ![最新的版本号](https://img.shields.io/github/v/release/sganggs/Stronghold-Protocol?style=flat-square&label=) 测试，并看过 [最新提交](https://github.com/sganggs/Stronghold-Protocol/commits/master/)，确认这一 Bug 还没有修复。我也已在 [Issues](https://github.com/sganggs/Stronghold-Protocol/issues) 中检索，确认这一 Bug 未被提交过。
+        - label: 我已刷新页面重试，并在 [本仓库 Issues](https://github.com/sunstricken/Stronghold-Protocol/issues) 中检索过相同问题。
           required: true
-        - label: 我已知晓并同意，此处仅用于汇报程序中存在的问题（关于其他非程序本身的问题应当在 Discussion 板块提出）。
+        - label: 我反馈的是此衍生版本或本服的问题；其他独立服务器的运行问题应联系对应维护者。
           required: true
   - type: input
     id: version
     attributes:
       label: 版本号
       description: |
-        你正在使用的版本。看标题画面角落的版本号，或发布压缩包的文件名。从检出的源码运行时，在仓库目录执行 `git rev-parse --short HEAD`。上面徽章里的号是仓库当前的最新发布，只作对照，不是你这份的版本。
+        你正在使用的版本。看标题画面角落的版本号，或发布压缩包的文件名。从检出的源码运行时，在仓库目录执行 `git rev-parse --short HEAD`。可附设置中的诊断信息。
       placeholder: "例如 0.3.0，或提交的短哈希"
+    validations:
+      required: true
+  - type: input
+    id: server-url
+    attributes:
+      label: 访问的服务器地址
+      placeholder: "例如 http://47.101.63.122/"
     validations:
       required: true
   - type: markdown

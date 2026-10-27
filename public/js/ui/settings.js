@@ -29,6 +29,8 @@ import { html, Modal, Button, Icon, MicroLabel, Tooltip, confirmDialog } from '.
 import { GIcon } from './gameComponents.js';
 import { useStore, savePref, store } from '../store.js';
 import { settingsStore } from './settingsStore.js';
+import { ISSUES_URL } from '../../../shared/project.js';
+import { MaintainerLinks } from './maintainerLinks.js';
 export { settingsStore } from './settingsStore.js';
 import { sanitizeSettings, HOTKEY_ACTIONS, DEFAULT_HOTKEYS, hotkeyLabel, rebindHotkey, isDefaultHotkeys, captureHotkey, VOICE_LANGS, TEXT_SIZES } from './gameLogic.js';
 import { audio } from '../audio.js';
@@ -222,8 +224,8 @@ function HotkeySection({ keys, touchUi }) {
   </section>`;
 }
 
-/** Where a report goes: the upstream issue tracker (shown as text the player can select; a link may open nothing). */
-export const ISSUES_URL = 'https://github.com/sganggs/Stronghold-Protocol/issues';
+/** Compatibility export; feedback belongs to this fork's maintainer. */
+export { ISSUES_URL } from '../../../shared/project.js';
 
 /**
  * 问题反馈: copy the diagnostics of this page (diag.js) for a GitHub issue — the errors recorded since the page opened,
@@ -259,9 +261,10 @@ function DiagSection() {
       <${Button} variant="ghost" size="sm" icon="copy" class="set-diag__copy" data-testid="diag-copy" onClick=${copy}>${t('复制诊断信息')}<//>
     </div>
     <p class="set-hint">${t('遇到问题时，复制诊断信息并粘贴到 GitHub issue 中，开发者就能看到出错时的情况。诊断信息只在本机生成，不会自动上传；玩家名和房间号会被替换。')}</p>
+    <p class="set-hint"><${MaintainerLinks} /></p>
     <div class="set-diag__meta">
       <span class="set-diag__stat">${t('已记录的错误')}<b class=${cx('set-diag__count num', n > 0 && 'is-warn')} data-testid="diag-count">${n}</b></span>
-      <span class="set-diag__url">${ISSUES_URL.replace(/^https:\/\//, '')}</span>
+      <a class="set-diag__url" href=${ISSUES_URL} target="_blank" rel="noopener noreferrer">${ISSUES_URL.replace(/^https:\/\//, '')}</a>
     </div>
     ${battle ? html`<${Toggle} label=${t('附上本场战斗')} micro="BATTLE DATA" value=${attach} onChange=${setAttach} />
       <p class="set-hint set-diag__battle-hint">${t('开发者可以用附上的战斗数据重现这场战斗。')}</p>` : null}

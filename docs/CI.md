@@ -1,5 +1,10 @@
 # CI（持续集成）
 
+定制服的 `.github/workflows/deploy.yml` 在 `master` 的 push CI 成功后发布精确提交的 GHCR 代码镜像。
+PR CI 不授予发布资格；按 digest 部署，生产连接由仓库变量 `DEPLOY_ENABLED` 启用。
+手动 deploy 也要求相同 SHA 通过 push CI，rollback 使用服务器保留的上一镜像。
+配置与首次迁移见 [DEPLOY-FORK.md](DEPLOY-FORK.md)。原有 CI / Golden 门槛保持不变。
+
 分片只分配测试文件，不减少全量测试集合。#835 和 #836 一起落地；`.github/workflows/ci.yml` 的配置为：
 
 - `test (os, node, shard)`：Ubuntu / Windows × Node 22 × 片 0–3，共 8 个任务。每个任务做 setup 检查、自己一片的测试和服务器冒烟测试，超时 20 分钟。

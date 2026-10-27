@@ -56,7 +56,7 @@ export function healthReport({ startedAt, network, registry, lobby, content = nu
   const report = {
     ok: true, version: PROTOCOL_VERSION, app: APP_VERSION, uptimeSec: Math.round((Date.now() - startedAt) / 1000),
     // the runtime the server is serving right now (public/js/ui/buildGuard.js): a page whose own build is
-    // older than this reloads itself, so a deploy reaches clients that never reload
+    // older than this offers a dismissible update notice (never an automatic reload).
     build: buildTag(),
     // what its rooms play (DESIGN §32): the vanilla content hash, and how many content sets with gameplay plugins rooms
     // hold now (P1c, §32.6 — a room's cosmetic plugins leave its cs the vanilla one, §32.3); how many unofficial plugins
@@ -90,12 +90,13 @@ const wantsTraffic = (query) => /(?:^|&)traffic(?:=(?:1|true|yes))?(?:&|$)/i.tes
  *   plugin studio (server/studio/index.js), or none
  * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void}
  */
-export function createRequestHandler({ serveStatic, health, log, trustProxy = 'auto', studio = null, csp = null, trustedRuntime = null }) {
+export function createRequestHandler({ serveStatic, health, log, trustProxy = 'auto', studio = null, csp = null, trustedRuntime = null, deployment = null }) {
   async function handleRequest(req, res) {
     const url = req.url || '/';
     if (url.length > MAX_URL_LENGTH) { sendError(req, res, 414, '请求地址过长 · URI too long'); return; }
     const parts = splitUrl(url);
     if (!parts) { sendError(req, res, 400, '请求地址无效 · Bad request'); return; }
+    if (deployment?.handle(req, res, parts.rawPath)) return;
     if (trustedRuntime && parts.rawPath.startsWith('/x/') && await trustedRuntime.route(req,res,parts.rawPath)) return;
     if (studio && studio.handles(parts.rawPath)) { await studio.handle(req, res, parts.rawPath, parts.query); return; }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -105,7 +106,9 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
     }
     if (parts.rawPath === '/healthz') {
       const withTraffic = wantsTraffic(parts.query) && isLocalIp(clientAddress(req, trustProxy).ip);
-      sendJson(req, res, 200, healthReport(health, withTraffic));
+      sendJson(req, res, 200, { ...healthReport(health, withTraffic),
+        release: /^[a-f0-9]{40}$/.test(process.env.SP_RELEASE_SHA || '') ? process.env.SP_RELEASE_SHA : null,
+        deployment: deployment?.status() || { supported: false, draining: false, expiresAt: null } });
       return;
     }
     await serveStatic(req, res, parts.rawPath, parts.query);

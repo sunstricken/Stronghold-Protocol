@@ -85,7 +85,9 @@ test('the real tracked tree: runtime in, the rest out; every shipped import, npm
   assert.deepEqual(p.problems, []);
   const got = new Set(p.files);
   for (const f of ['server/index.js', 'tools/setup.mjs', 'tools/fetch-assets.mjs', 'scripts/start.sh', 'docs/PLAYING.md', 'docs/DEPLOY.md',
-    'package-lock.json', 'NOTICE.md', ...RUNTIME_RESEARCH]) assert.ok(got.has(f), f);
+    'package-lock.json', 'NOTICE.md', 'public/js/ui/buildUpdate.js', 'server/http/deployment.js', 'docs/DEPLOY-FORK.md',
+    'scripts/deploy/deploy.sh', 'scripts/deploy/container-probe.mjs', 'scripts/deploy/server.env.example',
+    ...RUNTIME_RESEARCH]) assert.ok(got.has(f), f);
   for (const f of ['tools/golden.mjs', 'tools/package.mjs', 'scripts/make-windows-bundle.mjs', 'docs/DESIGN.md', 'eslint.config.js', 'Dockerfile']) {
     assert.ok(!got.has(f), f);
   }
@@ -330,7 +332,7 @@ test('the stage drops dishonest npm scripts and rewrites unshipped doc links', {
     const stagedPkg = JSON.parse(fs.readFileSync(path.join(stage, 'package.json'), 'utf8'));
     assert.deepEqual(Object.keys(stagedPkg.scripts).sort(), ['assets', 'doctor', 'launch', 'postinstall', 'setup', 'start', 'vendor']);
     assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).scripts.test, 'node --test');
-    const host = 'https://github.com/sganggs/Stronghold-Protocol';
+    const host = 'https://github.com/sunstricken/Stronghold-Protocol';
     const got = fs.readFileSync(path.join(stage, 'README.md'), 'utf8');
     assert.equal(got, `# r\n\n[design](${host}/blob/v9.9.9/docs/DESIGN.md)\n[play](docs/PLAYING.md)\n[rel](${host}/releases/latest)\n![shot](${host}/raw/v9.9.9/docs/img/x.jpg)\n`);
     assert.equal(fs.readFileSync(path.join(dir, 'README.md'), 'utf8'), readme, 'the git checkout keeps its relative links');
@@ -472,7 +474,7 @@ test('the README names the version, the manifests it matches, how to import, and
   assert.ok(text.startsWith('\ufeff卫戍协议：盟约 v0.3.0 素材包\n'), 'UTF-8 with a BOM');
   for (const s of ['data/assets.json、data/local-assets.json、data/local-fx.json', '「导入素材包」', '「选择 zip」', '「跳过 1 个」',
     'HTTPS', 'localhost', '"Import asset pack"', 'files that version does not list are skipped', '2 files (3.0 MB)',
-    'https://github.com/sganggs/Stronghold-Protocol/blob/v0.3.0/NOTICE.md']) assert.ok(text.includes(s), s);
+    'https://github.com/sunstricken/Stronghold-Protocol/blob/v0.3.0/NOTICE.md']) assert.ok(text.includes(s), s);
   const dev = assetPackReadme({ version: '0.3.1-dev', files: [], bytes: { art: 0 }, local: false, fx: false });
   assert.ok(dev.includes('/blob/v0.3.1/NOTICE.md') && !dev.includes('local-fx.json'));
 });

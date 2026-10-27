@@ -1,0 +1,162 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Deploy the tested master revision, or restore the previous server image
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+
+permissions:
+  contents: read
+
+# Do not cancel a job while it is replacing the live container.
+concurrency:
+  group: stronghold-production
+  cancel-in-progress: false
+
+jobs:
+  revision:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.revision.outputs.sha }}
+      image: ${{ steps.revision.outputs.image }}
+    steps:
+      - name: Select an exact revision with successful CI
+        id: revision
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: 'master' });
+            const sha = context.eventName === 'workflow_run' ? context.payload.workflow_run.head_sha : context.sha;
+            if (branch.data.commit.sha !== sha) throw new Error('This run no longer describes master; use the latest CI run.');
+            if (context.payload.inputs?.operation !== 'rollback') {
+              const runs = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id: 'ci.yml',
+                head_sha: sha, event: 'push', status: 'completed', per_page: 100 });
+              if (!runs.data.workflow_runs.some(run => run.conclusion === 'success' && run.head_repository.full_name === `${owner}/${repo}`)) {
+                throw new Error('The exact master commit must pass CI before publishing or deploying.');
+              }
+            }
+            core.setOutput('sha', sha);
+            core.setOutput('image', `ghcr.io/${owner}/${repo}`.toLowerCase());
+
+  image:
+    needs: revision
+    if: github.event.inputs.operation != 'rollback'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.revision.outputs.sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish code without game art
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ needs.revision.outputs.image }}:sha-${{ needs.revision.outputs.sha }}
+          build-args: |
+            FETCH_ASSETS=0
+            RELEASE_SHA=${{ needs.revision.outputs.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  production:
+    needs: [revision, image]
+    if: >-
+      always() && needs.revision.result == 'success' && vars.DEPLOY_ENABLED == 'true' &&
+      (needs.image.result == 'success' || github.event.inputs.operation == 'rollback')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/stronghold' }}
+      CONTAINER_NAME: ${{ vars.DEPLOY_CONTAINER || 'stronghold' }}
+      PUBLIC_PORT: ${{ vars.DEPLOY_PUBLIC_PORT || '3000' }}
+      BIND_ADDRESS: ${{ vars.DEPLOY_BIND_ADDRESS || '0.0.0.0' }}
+      RELEASE_SHA: ${{ needs.revision.outputs.sha }}
+      IMAGE: ${{ needs.revision.outputs.image }}@${{ needs.image.outputs.digest }}
+      OPERATION: ${{ github.event.inputs.operation || 'deploy' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.revision.outputs.sha }}
+          persist-credentials: false
+      - name: Configure SSH with a pinned host key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$DEPLOY_PORT" =~ ^[0-9]{1,5}$ && "$DEPLOY_PORT" -gt 0 && "$DEPLOY_PORT" -le 65535 ]]
+          [[ "$DEPLOY_PATH" =~ ^/[a-zA-Z0-9/_-]+$ && "$DEPLOY_PATH" != / ]]
+          [[ "$CONTAINER_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,60}$ ]]
+          [[ "$PUBLIC_PORT" =~ ^[0-9]{1,5}$ && "$PUBLIC_PORT" -gt 0 && "$PUBLIC_PORT" -le 65535 ]]
+          [[ "$BIND_ADDRESS" == 0.0.0.0 || "$BIND_ADDRESS" == 127.0.0.1 ]]
+          [[ "$OPERATION" == deploy || "$OPERATION" == rollback ]]
+          [[ -n "$SSH_KEY" && -n "$KNOWN_HOSTS" ]]
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+      - name: Deploy or roll back with match protection
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          stage="$DEPLOY_PATH/deploy-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          ssh_opts=(-i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          [[ "$GHCR_USER" =~ ^[a-zA-Z0-9-]+$ ]]
+          cleanup_registry() {
+            ssh "${ssh_opts[@]}" -p "$DEPLOY_PORT" "$target" \
+              "rm -f -- '$stage/docker-auth/config.json'; rmdir -- '$stage/docker-auth' 2>/dev/null || true" || true
+          }
+          trap cleanup_registry EXIT
+          ssh "${ssh_opts[@]}" -p "$DEPLOY_PORT" "$target" "mkdir -p -- '$stage'"
+          scp "${ssh_opts[@]}" -P "$DEPLOY_PORT" scripts/deploy/deploy.sh scripts/deploy/container-probe.mjs "$target:$stage/"
+          printf '%s\n' "$GHCR_TOKEN" | ssh "${ssh_opts[@]}" -p "$DEPLOY_PORT" "$target" \
+            "umask 077; mkdir -p -- '$stage/docker-auth'; docker --config '$stage/docker-auth' login ghcr.io --username '$GHCR_USER' --password-stdin"
+          ssh "${ssh_opts[@]}" -p "$DEPLOY_PORT" "$target" \
+            "DOCKER_CONFIG='$stage/docker-auth' SP_DEPLOY_ROOT='$DEPLOY_PATH' SP_CONTAINER_NAME='$CONTAINER_NAME' SP_PUBLIC_PORT='$PUBLIC_PORT' SP_BIND_ADDRESS='$BIND_ADDRESS' bash '$stage/deploy.sh' '$OPERATION' '$IMAGE' '$RELEASE_SHA'"
+      - name: Remove runner SSH credentials
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/known_hosts

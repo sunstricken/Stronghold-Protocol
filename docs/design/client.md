@@ -2,6 +2,30 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+### Fork identity and independent-server directory
+
+The owner's 2026-10-27 decision identifies this deployment as the sunstricken fork. Title, feedback, metadata,
+contribution templates and packaged documentation point to that fork. Original source attribution, licenses and
+historical upstream references remain. Public contacts and the manually curated server directory live in
+`public/site-config.json`; `shared/project.js` owns repository identity. Contacts may be absent.
+
+Only the title screen offers server navigation. The first successful load with another server listed opens a
+dismissible notice once per browser origin, unless `showOnFirstVisit` is false. Closing, Escape and continuing here
+remember dismissal; the title entry can reopen it. Current origin is marked explicitly; disabled, unsafe and duplicate
+links are omitted. External links open new tabs. Rooms, live matches and the lobby never expose the directory,
+including when room recovery leaves the title visible. Servers operate independently with no partnership, shared
+rooms or match migration. The directory does no status probing; loading failure leaves entry to the game available.
+All interface text uses the shipped language packs. Configuration: [DEPLOY-FORK.md](../DEPLOY-FORK.md).
+
+### Fork deployment update notice
+
+The 2026-10-26 owner decision replaces automatic build-guard reloads with a dismissible notice in every route.
+Two consecutive checks must agree on a changed build. One confirmed build notifies once; later deployments notify again.
+Dismissal never refreshes, disconnects, or reopens on the next poll. After entry a banner can reopen the notice.
+Updating is disabled while a match is on screen without its result; after settlement the player may refresh.
+Returning to the lobby never reloads automatically. A rollback to the page baseline clears the stale notice.
+Server deployment protects live matches separately ([DEPLOY-FORK.md](../DEPLOY-FORK.md)).
+
 ## 9. Client rendering contract (public/js/render)
 
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed

@@ -1944,6 +1944,7 @@ export class Lobby {
 
   /** @param {Room} room @param {string | null} [key] per-network limit key of the starter */
   startMatch(room, key = null) {
+    if (this.canStartMatch && !this.canStartMatch()) return fail(ERR.MAINTENANCE);
     if (room.test && !this.testEnabled) return fail(ERR.TEST_DISABLED);
     // another official version's match runs in that version's match host — never here, where every module singleton
     // holds 第二期下半's data (header "Official versions"); a test that gave its own MatchClass runs it in place

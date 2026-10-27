@@ -338,3 +338,17 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
 .notice-card__meta { margin: 0; font-size: calc(.13 * var(--t)); color: var(--text-dim); overflow-wrap: anywhere; }
 .notice-card__title { margin: .02rem 0; font-size: calc(.16 * var(--t)); color: var(--text-hi); overflow-wrap: anywhere; }
 .notice-card__body { margin: 0; font-size: calc(.15 * var(--t)); color: var(--text-md); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
+
+.maintainer-links { display: inline-flex; flex-wrap: wrap; gap: .06rem .12rem; overflow-wrap: anywhere; }
+.server-directory-slot { display: inline-flex; }
+.server-directory { width: min(7.2rem, 94vw); }
+.server-directory__list { display: grid; gap: .12rem; margin-top: .16rem; }
+.server-directory__card { min-width: 0; padding: max(.14rem, 10px); border: 1px solid var(--line); background: rgba(0, 0, 0, .22); overflow-wrap: anywhere; }
+.server-directory__card.is-current { border-color: var(--mint); }
+.server-directory__card h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .12rem; margin: 0; font-size: max(calc(.18 * var(--t)), 15px); color: var(--text-hi); }
+.server-directory__card p { margin: .06rem 0; font-size: max(calc(.15 * var(--t)), 13px); color: var(--text-md); }
+.server-directory__badge { color: var(--mint); font-size: max(calc(.13 * var(--t)), 12px); font-weight: normal; }
+.server-directory__url { user-select: text; -webkit-user-select: text; }
+.server-directory__visit { display: inline-flex; align-items: center; min-height: 44px; color: var(--mint); font-size: max(calc(.16 * var(--t)), 14px); text-underline-offset: 3px; }
+.server-directory .modal__text { font-size: max(calc(.16 * var(--t)), 14px); }
+.server-directory .btn { min-height: 44px; font-size: max(calc(.16 * var(--t)), 14px); }

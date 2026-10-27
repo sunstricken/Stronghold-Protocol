@@ -1,5 +1,11 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
+本仓库是 [sunstricken 维护的衍生版本](https://github.com/sunstricken/Stronghold-Protocol)。
+本版本的问题请提交到[本仓库 Issues](https://github.com/sunstricken/Stronghold-Protocol/issues)，
+或联系 [strickensun@qq.com](mailto:strickensun@qq.com)。请附访问的服务器地址、版本和复现步骤。
+原项目来自 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol)，原有署名、许可和历史记录保留。
+本服自动部署见 [docs/DEPLOY-FORK.md](docs/DEPLOY-FORK.md)。下文保留整合包使用说明，实际发布文件以本仓库 Releases 为准。
+
 《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–4 人联机合作。
 
 ![version](https://img.shields.io/badge/version-0.3.3-2ea44f)
@@ -83,7 +89,7 @@ English summary: [below](#english).
 ### 方式二：从源码运行
 
 ```bash
-git clone https://github.com/sganggs/Stronghold-Protocol.git
+git clone https://github.com/sunstricken/Stronghold-Protocol.git
 cd Stronghold-Protocol
 npm install        # 安装依赖（postinstall 会把 pixi / preact / three 复制到 public/vendor）
 npm run setup      # 检查环境，并从公开镜像下载约 720 MB 美术 / 音频（可中断，再次运行会续传）
